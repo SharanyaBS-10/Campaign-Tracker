@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Tracker Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Campaign Tracker</h2>
+    <ul>
+      <li><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+      <li><a href="#"><i class="fas fa-bullhorn"></i> Campaigns</a></li>
+      <li><a href="#"><i class="fas fa-user"></i> Users</a></li>
+      <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+    </ul>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <header>
+      <h1>Dashboard</h1>
+      <button class="btn" id="toggle-form">Add Campaign</button>
+    </header>
+
+    <!-- Dashboard cards -->
+    <div class="cards">
+      <div class="card">
+        <h3>Total Campaigns</h3>
+        <p id="total-campaigns">0</p>
+      </div>
+      <div class="card">
+        <h3>Active Campaigns</h3>
+        <p id="active-campaigns">0</p>
+      </div>
+      <div class="card">
+        <h3>Completed Campaigns</h3>
+        <p id="completed-campaigns">0</p>
+      </div>
+    </div>
+
+    <!-- Form + Table Section -->
+    <div class="content-section">
+      <!-- Add Campaign Form -->
+      <section class="form-section" id="campaign-form-section">
+        <h2>Add New Campaign</h2>
+        <form id="campaign-form">
+          <input type="text" name="title" placeholder="Campaign Title" required>
+          <input type="text" name="client" placeholder="Client Name" required>
+          <select name="status" required>
+            <option value="">Select Status</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Pending">Pending</option>
+          </select>
+          <input type="date" name="start_date" required>
+          <input type="date" name="end_date" required>
+          <button type="submit" class="btn">Add Campaign</button>
+        </form>
+      </section>
+
+      <!-- Campaign Table -->
+      <section class="table-section">
+        <h2>All Campaigns</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Client</th>
+              <th>Status</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="campaign-table-body">
+            <!-- JS will populate campaigns here -->
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // Toggle form visibility
+    const toggleBtn = document.getElementById('toggle-form');
+    const formSection = document.getElementById('campaign-form-section');
+    formSection.style.display = 'block'; // show by default
+    toggleBtn.addEventListener('click', () => {
+      formSection.style.display = formSection.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Submit new campaign
+    const form = document.getElementById('campaign-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const campaign = {};
+      formData.forEach((value, key) => campaign[key] = value);
+
+      const res = await fetch('/api/campaigns/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(campaign)
+      });
+
+      if(res.ok){
+        alert('Campaign added successfully!');
+        form.reset();
+        loadCampaigns();
+      } else {
+        alert('Failed to add campaign');
+      }
+    });
+
+    // Load campaigns into table
+    async function loadCampaigns() {
+      const res = await fetch('/api/campaigns/');
+      const campaigns = await res.json();
+      const tableBody = document.getElementById('campaign-table-body');
+      tableBody.innerHTML = '';
+
+      let total = 0, active = 0, completed = 0;
+
+      campaigns.forEach(c => {
+        total++;
+        if(c.status === 'Active') active++;
+        if(c.status === 'Completed') completed++;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${c.title}</td>
+          <td>${c.client || '-'}</td>
+          <td>${c.status}</td>
+          <td>${c.start_date}</td>
+          <td>${c.end_date}</td>
+          <td>
+            <button class="btn edit-btn">Edit</button>
+            <button class="btn delete-btn">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      document.getElementById('total-campaigns').innerText = total;
+      document.getElementById('active-campaigns').innerText = active;
+      document.getElementById('completed-campaigns').innerText = completed;
+    }
+
+    loadCampaigns();
+    // Handle Delete
+document.addEventListener('click', async (e) => {
+  if(e.target.classList.contains('delete-btn')){
+    const id = e.target.getAttribute('data-id');
+    if(confirm('Are you sure you want to delete this campaign?')){
+      const res = await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
+      if(res.ok){
+        alert('Campaign deleted!');
+        loadCampaigns();
+      } else {
+        alert('Failed to delete campaign');
+      }
+    }
+  }
+
+  // Handle Edit
+  if(e.target.classList.contains('edit-btn')){
+    const id = e.target.getAttribute('data-id');
+    const row = e.target.closest('tr');
+    const title = row.children[0].innerText;
+    const client = row.children[1].innerText;
+    const status = row.children[2].innerText;
+    const start_date = row.children[3].innerText;
+    const end_date = row.children[4].innerText;
+
+    // Fill form with current values
+    form.title.value = title;
+    form.client.value = client;
+    form.status.value = status;
+    form.start_date.value = start_date;
+    form.end_date.value = end_date;
+
+    // Change submit action to update
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const updatedCampaign = {
+        title: form.title.value,
+        client: form.client.value,
+        status: form.status.value,
+        start_date: form.start_date.value,
+        end_date: form.end_date.value
+      };
+
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedCampaign)
+      });
+
+      if(res.ok){
+        alert('Campaign updated!');
+        form.reset();
+        form.onsubmit = addCampaignHandler; // restore original submit
+        loadCampaigns();
+      } else {
+        alert('Failed to update campaign');
+      }
+    };
+  }
+});
+
+// Store original form submit handler
+const addCampaignHandler = form.onsubmit;
+
+  </script>
+  
+</body>
+</html>
