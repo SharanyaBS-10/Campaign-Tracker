@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Tracker Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Campaign Tracker</h2>
+    <ul>
+      <li><a href="#" id="logout">Logout</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1>Dashboard</h1>
+      <button class="btn" id="toggle-form">Add Campaign</button>
+    </header>
+
+    <section id="campaign-form-section">
+      <form id="campaign-form">
+        <input type="text" name="campaign_name" placeholder="Campaign Name" required>
+        <input type="text" name="client_name" placeholder="Client Name" required>
+        <input type="date" name="start_date" required>
+        <select name="status" required>
+          <option value="Active">Active</option>
+          <option value="Completed">Completed</option>
+        </select>
+        <button type="submit" class="btn">Add Campaign</button>
+      </form>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Campaign Name</th>
+          <th>Client</th>
+          <th>Status</th>
+          <th>Start Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="campaigns"></tbody>
+    </table>
+  </div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>
